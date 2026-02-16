@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JIGSAW Documentation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Merriweather', serif;
+            background-color: #fdfbf7;
+            color: #1a1a1a;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+            font-family: 'Playfair Display', serif;
+        }
+
+        .prose {
+            max-width: 65ch;
+            margin: 0 auto;
+            line-height: 1.8;
+        }
+
+        .code-block {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #f4f4f4;
+            border-left: 4px solid #333;
+            padding: 1rem;
+            overflow-x: auto;
+            margin: 1.5rem 0;
+            font-size: 0.9em;
+        }
+
+        .separator {
+            border-bottom: 2px solid #e5e7eb;
+            margin: 3rem 0;
+            position: relative;
+        }
+
+        .separator::after {
+            content: "§";
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            top: -14px;
+            background-color: #fdfbf7;
+            padding: 0 1rem;
+            color: #9ca3af;
+            font-style: italic;
+        }
+
+        a {
+            color: #b91c1c;
+            text-decoration: underline;
+            text-decoration-style: dotted;
+            text-underline-offset: 4px;
+        }
+
+        a:hover {
+            color: #991b1b;
+            text-decoration-style: solid;
+        }
+    </style>
+</head>
+
+<body class="antialiased min-h-screen pb-20">
+
+    <!-- Header -->
+    <header class="pt-20 pb-16 text-center border-b-4 border-double border-gray-800 mb-12 mx-auto max-w-4xl px-4">
+        <div class="mb-4 text-6xl font-black tracking-widest uppercase">JIGSAW</div>
+        <div class="text-xl italic text-gray-600">Joint Intelligence Generator for Strategic Attack Wordlists</div>
+        <div
+            class="mt-6 text-sm font-bold tracking-widest uppercase border-t border-b border-gray-300 py-2 inline-block px-8">
+            Est. 2026 &bull; Rupam Ghosh
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="prose px-6">
+
+        <!-- Introduction -->
+        <section id="intro">
+            <p
+                class="first-letter:text-7xl first-letter:float-left first-letter:mr-3 first-letter:font-bold first-letter:text-gray-900">
+                JIGSAW is a high-performance, intelligent wordlist generator designed for modern offensive security.
+                Constructed with the robustness of Rust, it transcends simple brute-force methods by employing
+                probabilistic models,
+                targeted personal profiling, and advanced permutation logic to cultivate high-value password candidates.
+            </p>
+        </section>
+
+        <div class="separator"></div>
+
+        <!-- Installation -->
+        <section id="installation">
+            <h2 class="text-3xl font-bold mb-6 text-center">Installation</h2>
+            <p>Ensure that Rust and Cargo are installed on your system. Compilation requires the standard release
+                profile.</p>
+            <div class="code-block">
+                git clone https://github.com/rupam-ghosh/jigsaw.git
+                cd jigsaw
+                cargo build --release
+            </div>
+            <p>The resulting binary resides within <code>target/release/jigsaw</code>.</p>
+        </section>
+
+        <div class="separator"></div>
+
+        <!-- CLI Modes -->
+        <section id="modes">
+            <h2 class="text-3xl font-bold mb-6 text-center">Operational Modes</h2>
+
+            <h3 class="text-2xl font-bold mt-8 mb-4">1. Mask Attack</h3>
+            <p>Generates candidates based on a specific structural pattern.</p>
+            <div class="code-block">
+                ./jigsaw -m "?l?l?l?l?d?d" --output mask_list.txt
+            </div>
+
+            <h3 class="text-2xl font-bold mt-8 mb-4">2. Markov Chain</h3>
+            <p>Trains a probabilistic model on an existing wordlist (e.g., RockYou) to generate statistically probable
+                passwords.</p>
+            <div class="code-block">
+                ./jigsaw --train rockyou.txt
+                ./jigsaw --markov --model jigsaw.model --count 1000000
+            </div>
+
+            <h3 class="text-2xl font-bold mt-8 mb-4">3. Personal Attack</h3>
+            <p>Constructs a targeted wordlist derived from a subject's personal information (names, dates, interests)
+                using deep permutation logic.</p>
+            <div class="code-block">
+                ./jigsaw --personal --profile target.json
+            </div>
+            <p class="text-sm italic mt-2">Use <code>--interactive</code> to build a profile via the wizard.</p>
+        </section>
+
+        <div class="separator"></div>
+
+        <!-- API Documentation -->
+        <section id="api">
+            <h2 class="text-3xl font-bold mb-6 text-center">RESTful API</h2>
+            <p>JIGSAW exposes its engine via a high-performance HTTP server. This allows for integration into web
+                frontends or automated pipelines.</p>
+
+            <div class="bg-gray-100 p-4 border border-gray-300 my-6 shadow-inner text-center">
+                <span class="font-bold">Start Server:</span> <code>./jigsaw server --port 8080</code>
+            </div>
+
+            <div class="space-y-12">
+                <!-- Endpoint 1 -->
+                <div>
+                    <h3 class="text-xl font-bold border-b border-gray-400 pb-2 mb-4">Generate Wordlist</h3>
+                    <p class="mb-2"><span class="font-bold text-red-800">POST</span> <code>/api/personal/generate</code>
+                    </p>
+                    <p>Generates a list of password candidates from a JSON profile.</p>
+
+                    <h4 class="font-bold mt-4 text-sm uppercase">Request Body</h4>
+                    <div class="code-block">
+                        {
+                        "first_names": ["John"],
+                        "last_names": ["Doe"],
+                        "dates": ["1990"],
+                        "numbers": ["123"]
+                        }
+                    </div>
+                </div>
+
+                <!-- Endpoint 2 -->
+                <div>
+                    <h3 class="text-xl font-bold border-b border-gray-400 pb-2 mb-4">Check Password</h3>
+                    <p class="mb-2"><span class="font-bold text-red-800">POST</span> <code>/api/check-password</code>
+                    </p>
+                    <p>Efficiently checks if a specific password exists within the potential mutations of a profile.</p>
+
+                    <h4 class="font-bold mt-4 text-sm uppercase">Request Body</h4>
+                    <div class="code-block">
+                        {
+                        "profile": { ... },
+                        "password": "John_Doe123"
+                        }
+                    </div>
+                    <h4 class="font-bold mt-4 text-sm uppercase">Response</h4>
+                    <div class="code-block">
+                        {
+                        "found": true,
+                        "position": 715,
+                        "time_taken_ms": 3
+                        }
+                    </div>
+                </div>
+
+                <!-- Endpoint 3 -->
+                <div>
+                    <h3 class="text-xl font-bold border-b border-gray-400 pb-2 mb-4">Memorable Generator</h3>
+                    <p class="mb-2"><span class="font-bold text-green-800">GET</span>
+                        <code>/api/memorable/generate</code>
+                    </p>
+                    <p>Produces a secure, memorable password using an Adjective-Noun-Verb pattern.</p>
+
+                    <h4 class="font-bold mt-4 text-sm uppercase">Response</h4>
+                    <div class="code-block">
+                        {
+                        "password": "HappyTigerJump42!"
+                        }
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="separator"></div>
+
+        <!-- Footer -->
+        <footer class="text-center text-sm text-gray-500 pb-12">
+            <p>&copy; 2026 JIGSAW Project. All Rights Reserved.</p>
+            <p class="mt-2">Licensed under GPLv2.</p>
+        </footer>
+
+    </main>
+
+</body>
+
+</html>

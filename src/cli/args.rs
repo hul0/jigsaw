@@ -4,6 +4,9 @@ use std::path::PathBuf;
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 pub struct JigsawArgs {
+    #[command(subcommand)]
+    pub command: Option<Commands>,
+
     /// Mask pattern (e.g. ?u?l?l?d?d)
     #[arg(short, long)]
     pub mask: Option<String>,
@@ -52,4 +55,22 @@ pub struct JigsawArgs {
     /// Path to a Personal Profile JSON file
     #[arg(long, value_name = "PROFILE_PATH")]
     pub profile: Option<PathBuf>,
+
+    /// Generate a memorable password
+    #[arg(long)]
+    pub memorable: bool,
+
+    /// Check if this password exists in the generated wordlist
+    #[arg(long, value_name = "PASSWORD")]
+    pub check: Option<String>,
+}
+
+#[derive(Subcommand, Debug)]
+pub enum Commands {
+    /// Start the REST API server
+    Server {
+        /// Port to listen on
+        #[arg(short, long, default_value_t = 8080)]
+        port: u16,
+    },
 }

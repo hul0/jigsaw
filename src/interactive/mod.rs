@@ -9,9 +9,9 @@ pub fn run_wizard() -> anyhow::Result<JigsawArgs> {
     println!("Welcome to JIGSAW Interactive Mode");
     println!("----------------------------------");
 
-    let modes = vec!["Mask Attack", "Personal Attack", "Quit"];
+    let modes = vec!["Mask Attack", "Personal Attack", "Generate Memorable Password", "Check Password", "Quit"];
     let mode_selection = Select::with_theme(&ColorfulTheme::default())
-        .with_prompt("Select Attack Mode")
+        .with_prompt("Select Action")
         .default(0)
         .items(&modes)
         .interact()?;
@@ -19,10 +19,42 @@ pub fn run_wizard() -> anyhow::Result<JigsawArgs> {
     match mode_selection {
         0 => run_mask_wizard(),
         1 => run_personal_wizard(),
+        2 => run_memorable_wizard(),
+        3 => run_check_wizard(),
         _ => {
             std::process::exit(0);
         }
     }
+}
+
+fn run_memorable_wizard() -> anyhow::Result<JigsawArgs> {
+    Ok(JigsawArgs {
+        mask: None, rules: None, threads: None, output: None, interactive: false,
+        train: None, model: None, markov: false, count: 0, 
+        personal: false, profile: None, 
+        memorable: true, check: None, command: None
+    })
+}
+
+fn run_check_wizard() -> anyhow::Result<JigsawArgs> {
+    println!("\n--- Password Checker ---");
+    let profile_path: String = Input::with_theme(&ColorfulTheme::default())
+        .with_prompt("Path to Profile JSON")
+        .default("target.json".into())
+        .interact_text()?;
+    
+    let password: String = Input::with_theme(&ColorfulTheme::default())
+        .with_prompt("Password to Check")
+        .interact_text()?;
+        
+    Ok(JigsawArgs {
+        mask: None, rules: None, threads: None, output: None, interactive: false,
+        train: None, model: None, markov: false, count: 0, 
+        personal: true, 
+        profile: Some(PathBuf::from(profile_path)), 
+        memorable: false, 
+        check: Some(password), command: None
+    })
 }
 
 fn run_mask_wizard() -> anyhow::Result<JigsawArgs> {
@@ -75,6 +107,9 @@ fn run_mask_wizard() -> anyhow::Result<JigsawArgs> {
         count: 10000,
         personal: false,
         profile: None,
+        command: None,
+        memorable: false,
+        check: None,
     })
 }
 
@@ -198,5 +233,8 @@ fn run_personal_wizard() -> anyhow::Result<JigsawArgs> {
         count: 0,
         personal: true,
         profile: Some(path),
+        command: None,
+        memorable: false,
+        check: None,
     })
 }

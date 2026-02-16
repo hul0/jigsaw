@@ -2,9 +2,10 @@ mod engine;
 mod io;
 mod cli;
 mod interactive;
+mod api;
 
 use clap::Parser;
-use cli::args::JigsawArgs;
+use cli::args::{JigsawArgs, Commands};
 use engine::mask::Mask;
 use io::writer::{Writer, Output as WriterOutput};
 use std::str::FromStr;
@@ -12,8 +13,14 @@ use std::path::PathBuf;
 use crossbeam_channel::bounded;
 use rayon::prelude::*;
 
-fn main() -> anyhow::Result<()> {
+#[actix_web::main]
+async fn main() -> anyhow::Result<()> {
     let args = JigsawArgs::parse();
+
+    // Check for subcommands first
+    if let Some(Commands::Server { port }) = args.command {
+        return api::server::run_server(port).await.map_err(|e| anyhow::anyhow!(e));
+    }
 
     let final_args = if args.interactive {
         interactive::run_wizard()?
@@ -103,6 +110,13 @@ fn main() -> anyhow::Result<()> {
          return Ok(());
     }
 
+    // --- Memorable Password Mode ---
+    if final_args.memorable {
+        let password = engine::memorable::generate_memorable_password();
+        println!("\nGenerated Memorable Password:\n{}", password);
+        return Ok(());
+    }
+
     // --- Personal Attack Mode ---
     if final_args.personal || final_args.profile.is_some() {
         println!("JIGSAW Running in Personal Attack Mode...");
@@ -116,6 +130,17 @@ fn main() -> anyhow::Result<()> {
         let candidates = profile.generate();
         println!("Generated {} candidates.", candidates.len());
         
+        // Check Mode
+        if let Some(target) = &final_args.check {
+            println!("Checking for password: '{}'...", target);
+            if profile.check_password(target) {
+                println!("\n[+] SUCCESS: Password found!");
+            } else {
+                println!("\n[-] FAILURE: Password NOT found in generated list.");
+            }
+            return Ok(());
+        }
+
         // Setup Output
         let (sender, receiver) = bounded::<Vec<Vec<u8>>>(100);
         let writer_output = match final_args.output {
