@@ -1,0 +1,9 @@
+Origin: JIGSAW Repository
+Label: JIGSAW
+Suite: stable
+Codename: stable
+Version: 1.0
+Architectures: amd64
+Components: main
+Description: Jigsaw Password Toolkit Repository
+Date: Mon, 16 Feb 2026 22:03:18 +0000

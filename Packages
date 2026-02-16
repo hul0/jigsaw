@@ -1,0 +1,31 @@
+Package: jigsaw
+Version: 0.1.0-1
+Architecture: amd64
+Maintainer: Rupam Ghosh <hulo@hulo.codes>
+Installed-Size: 6268
+Depends: libc6 (>= 2.34), libgcc-s1 (>= 4.2)
+Filename: ./jigsaw_0.1.0-1_amd64.deb
+Size: 1980018
+MD5sum: 7411ceeff30da2194bb757e4171586da
+SHA1: 4e461fa8d0c1738af55440fa74e4b455b69e63fe
+SHA256: ebd41c1b13ba683dbc6c57e442febf4e335053adc2e88978cfe6f1e319a6dac6
+Section: security
+Priority: optional
+Homepage: https://github.com/hul0/jigsaw
+Description: intelligent password wordlist generator for offensive security
+ JIGSAW (Joint Intelligence Generator for Strategic Attack Wordlists) is a
+ high-performance, Rust-based intelligent wordlist generator designed for
+ modern offensive security.
+ .
+ It moves beyond simple brute-force by employing probabilistic models,
+ targeted personal profiling, and advanced permutation logic to generate
+ high-value password candidates.
+ .
+ Features include:
+  * Mask attack with Hashcat-style patterns
+  * Markov chain probabilistic password generation
+  * Personal attack using target profile JSON files
+  * Memorable password generator with multiple styles
+  * REST API server mode
+  * Interactive CLI wizard
+
