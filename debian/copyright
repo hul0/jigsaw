@@ -1,6 +1,6 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: jigsaw
-Upstream-Contact: Rupam Ghosh <rupam@jigsaw.dev>
+Upstream-Contact: Rupam Ghosh <hulo@hulo.codes>
 Source: https://github.com/hul0/jigsaw
 
 Files: *

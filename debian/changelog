@@ -8,4 +8,4 @@ jigsaw (0.1.0-1) unstable; urgency=medium
   * REST API server mode via actix-web.
   * Interactive CLI wizard.
 
- -- Rupam Ghosh <rupam@jigsaw.dev>  Mon, 17 Feb 2026 02:35:00 +0530
+ -- Rupam Ghosh <hulo@hulo.codes>  Mon, 17 Feb 2026 02:35:00 +0530
