@@ -5,8 +5,9 @@ mod interactive;
 mod api;
 
 use clap::Parser;
-use cli::args::{JigsawArgs, Commands};
+use cli::args::{JigsawArgs, Commands, OutputFormat, GenerationLevel, MemStyle, MemCase, NumPosition};
 use engine::mask::Mask;
+use engine::memorable::{MemorableConfig, MemorableStyle, CaseStyle, Position};
 use io::writer::{Writer, Output as WriterOutput};
 use std::str::FromStr;
 use std::path::PathBuf;
@@ -30,24 +31,25 @@ async fn main() -> anyhow::Result<()> {
 
     // --- Markov Training Mode ---
     if let Some(train_path) = final_args.train {
+        let start_time = std::time::Instant::now();
         println!("Training Markov model from {:?}...", train_path);
-        let mut model = engine::markov::MarkovModel::new(3); // Default order 3
+        let mut model = engine::markov::MarkovModel::new(3);
         model.train(&train_path)?;
         
         let valid_model_path = final_args.model.clone().unwrap_or_else(|| PathBuf::from("jigsaw.model"));
         println!("Saving model to {:?}...", valid_model_path);
         model.save(&valid_model_path)?;
-        println!("Training complete.");
+        println!("Training complete. Time taken: {}ms", start_time.elapsed().as_millis());
         return Ok(());
     }
 
     // --- Markov Generation Mode ---
     if final_args.markov {
+        let start_time = std::time::Instant::now();
         println!("JIGSAW Running in Markov Mode...");
         let model_path = final_args.model.clone().unwrap_or_else(|| PathBuf::from("jigsaw.model"));
         println!("Loading model from {:?}...", model_path);
         
-        // Load model (Arc it for threads)
         let model = engine::markov::MarkovModel::load(&model_path)?;
         let model = std::sync::Arc::new(model);
         
@@ -58,7 +60,6 @@ async fn main() -> anyhow::Result<()> {
             rayon::ThreadPoolBuilder::new().num_threads(threads).build_global()?;
         }
 
-        // Setup output
         let (sender, receiver) = bounded::<Vec<Vec<u8>>>(100);
         let writer_output = match final_args.output {
             Some(path) => WriterOutput::File(path),
@@ -66,8 +67,6 @@ async fn main() -> anyhow::Result<()> {
         };
         let writer_thread = Writer::new(receiver, writer_output).start();
 
-
-        // Define a batcher that includes RNG and flushes on drop
         struct MarkovBatcher {
             buffer: Vec<Vec<u8>>,
             sender: crossbeam_channel::Sender<Vec<Vec<u8>>>,
@@ -82,7 +81,6 @@ async fn main() -> anyhow::Result<()> {
             }
         }
 
-        // Parallel Generation
         (0..count).into_par_iter()
             .for_each_init(
                 || MarkovBatcher {
@@ -101,81 +99,141 @@ async fn main() -> anyhow::Result<()> {
                 }
             );
             
-         // Drop sender to signal 'done' (Main thread sender needs to be handled? No, bounded creates one pair. 
-         // Wait, `for_each_init` clones the sender. 
-         // But the original `sender` variable in main scope is still alive. We must drop it.
          drop(sender);
          writer_thread.join().expect("Writer panic")?;
-         println!("Done.");
+         println!("Done. Time taken: {}ms", start_time.elapsed().as_millis());
          return Ok(());
     }
 
     // --- Memorable Password Mode ---
     if final_args.memorable {
-        let password = engine::memorable::generate_memorable_password();
-        println!("\nGenerated Memorable Password:\n{}", password);
+        let start_time = std::time::Instant::now();
+        
+        let config = build_memorable_config(&final_args);
+        let passwords = engine::memorable::generate_batch(&config);
+        
+        match final_args.format {
+            OutputFormat::Json => {
+                println!("{}", serde_json::to_string_pretty(&serde_json::json!({
+                    "passwords": passwords,
+                    "count": passwords.len(),
+                    "style": format!("{:?}", config.style),
+                    "time_taken_ms": start_time.elapsed().as_millis(),
+                }))?);
+            }
+            OutputFormat::Plain => {
+                println!("\n  ╔═══════════════════════════════════════════╗");
+                println!("  ║     JIGSAW Memorable Passwords            ║");
+                println!("  ╚═══════════════════════════════════════════╝\n");
+                for (i, pw) in passwords.iter().enumerate() {
+                    println!("  {}. {} (len: {})", i + 1, pw, pw.len());
+                }
+                println!("\n  Generated {} password(s) in {}ms\n",
+                    passwords.len(), start_time.elapsed().as_millis());
+            }
+        }
         return Ok(());
     }
 
     // --- Personal Attack Mode ---
     if final_args.personal || final_args.profile.is_some() {
-        println!("JIGSAW Running in Personal Attack Mode...");
-        let profile_path = final_args.profile
-            .ok_or_else(|| anyhow::anyhow!("Profile path required for personal mode via CLI (use --profile)"))?;
-            
-        println!("Loading profile from {:?}...", profile_path);
-        let profile = engine::personal::Profile::load(&profile_path)?;
+        let start_time = std::time::Instant::now();
+        println!("\n  ╔═══════════════════════════════════════════╗");
+        println!("  ║     JIGSAW Personal Attack Engine          ║");
+        println!("  ╚═══════════════════════════════════════════╝\n");
         
-        println!("Generating candidates...");
-        let candidates = profile.generate();
-        println!("Generated {} candidates.", candidates.len());
+        let profile_path = final_args.profile
+            .ok_or_else(|| anyhow::anyhow!("Profile path required (use --profile <PATH>)"))?;
+            
+        println!("  Profile:  {:?}", profile_path);
+        println!("  Level:    {:?}", final_args.level);
+        
+        let mut profile = engine::personal::Profile::load(&profile_path)?;
+        
+        // Apply CLI length overrides
+        if let Some(min) = final_args.min_length {
+            profile.min_length = Some(min);
+        }
+        if let Some(max) = final_args.max_length {
+            profile.max_length = Some(max);
+        }
+        
+        if let Some(min) = profile.min_length {
+            println!("  Min Len:  {}", min);
+        }
+        if let Some(max) = profile.max_length {
+            println!("  Max Len:  {}", max);
+        }
+        println!();
         
         // Check Mode
         if let Some(target) = &final_args.check {
-            println!("Checking for password: '{}'...", target);
+            println!("  Checking for password: '{}'...", target);
             if profile.check_password(target) {
-                println!("\n[+] SUCCESS: Password found!");
+                println!("\n  [+] FOUND: Password exists in generated candidates!");
             } else {
-                println!("\n[-] FAILURE: Password NOT found in generated list.");
+                println!("\n  [-] NOT FOUND: Password not in generated list.");
             }
+            println!("  Time taken: {}ms", start_time.elapsed().as_millis());
             return Ok(());
         }
 
-        // Setup Output
-        let (sender, receiver) = bounded::<Vec<Vec<u8>>>(100);
-        let writer_output = match final_args.output {
-            Some(path) => WriterOutput::File(path),
-            None => WriterOutput::Stdout,
-        };
-        let writer_thread = Writer::new(receiver, writer_output).start();
-        
-        // Send in batches (Single threaded is fast enough for pre-generated vec)
-        let mut buffer = Vec::with_capacity(1000);
-        for candidate in candidates {
-            buffer.push(candidate);
-            if buffer.len() >= 1000 {
-                sender.send(buffer.clone()).expect("Channel closed");
-                buffer.clear();
+        // Generate
+        println!("  Generating candidates...");
+        let candidates = profile.generate();
+        println!("  Generated {} unique candidates.", candidates.len());
+
+        match final_args.format {
+            OutputFormat::Json => {
+                let strings: Vec<String> = candidates.iter()
+                    .map(|b| String::from_utf8_lossy(b).to_string())
+                    .collect();
+                let output_path = final_args.output;
+                let json = serde_json::to_string_pretty(&serde_json::json!({
+                    "candidates": strings,
+                    "total": strings.len(),
+                    "time_taken_ms": start_time.elapsed().as_millis(),
+                }))?;
+                if let Some(path) = output_path {
+                    std::fs::write(&path, &json)?;
+                    println!("  Written to {:?}", path);
+                } else {
+                    println!("{}", json);
+                }
+            }
+            OutputFormat::Plain => {
+                // Setup Output via writer
+                let (sender, receiver) = bounded::<Vec<Vec<u8>>>(100);
+                let writer_output = match final_args.output {
+                    Some(path) => WriterOutput::File(path),
+                    None => WriterOutput::Stdout,
+                };
+                let writer_thread = Writer::new(receiver, writer_output).start();
+                
+                // Send in parallel batches
+                let chunk_size = 1000;
+                for chunk in candidates.chunks(chunk_size) {
+                    sender.send(chunk.to_vec()).expect("Channel closed");
+                }
+                
+                drop(sender);
+                writer_thread.join().expect("Writer panic")?;
             }
         }
-        if !buffer.is_empty() {
-            sender.send(buffer).expect("Channel closed");
-        }
         
-        drop(sender);
-        writer_thread.join().expect("Writer panic")?;
-        println!("Done.");
+        println!("  Done. Time taken: {}ms\n", start_time.elapsed().as_millis());
         return Ok(());
     }
 
-    // --- Mask Mode (Original) ---
-    // If no mask provided (and not interactive), show help or error
+    // --- Mask Mode ---
     if final_args.mask.is_none() {
-        println!("Error: No mask specified. Use --mask or --interactive.");
+        println!("Error: No mode specified. Use --interactive, --personal, --memorable, --mask, or --markov.");
+        println!("Try: jigsaw --help");
         return Ok(());
     }
 
     let mask_str = final_args.mask.unwrap();
+    let start_time = std::time::Instant::now();
     println!("JIGSAW Running...");
     println!("Mask: {}", mask_str);
 
@@ -186,19 +244,15 @@ async fn main() -> anyhow::Result<()> {
         rayon::ThreadPoolBuilder::new().num_threads(threads).build_global()?;
     }
 
-    // Create channel
     let (sender, receiver) = bounded::<Vec<Vec<u8>>>(100);
     
-    // Output config
     let writer_output = match final_args.output {
         Some(path) => WriterOutput::File(path),
         None => WriterOutput::Stdout,
     };
 
-    // Spawn writer thread
     let writer_thread = Writer::new(receiver, writer_output).start();
     
-    // Parallel generation
     struct BatchSender {
         buffer: Vec<Vec<u8>>,
         sender: crossbeam_channel::Sender<Vec<Vec<u8>>>,
@@ -226,13 +280,46 @@ async fn main() -> anyhow::Result<()> {
         }
     );
     
-    // Drop sender to close channel
     drop(sender);
-    
-    // Wait for writer
     writer_thread.join().expect("Writer thread panicked")?;
     
-    println!("Done.");
+    println!("Done. Time taken: {}ms", start_time.elapsed().as_millis());
     Ok(())
 }
 
+/// Build MemorableConfig from CLI args
+fn build_memorable_config(args: &JigsawArgs) -> MemorableConfig {
+    MemorableConfig {
+        word_count: args.words,
+        separator: args.mem_sep.clone(),
+        case_style: match args.mem_case {
+            MemCase::Title => CaseStyle::Title,
+            MemCase::Lower => CaseStyle::Lower,
+            MemCase::Upper => CaseStyle::Upper,
+            MemCase::Random => CaseStyle::Random,
+            MemCase::Alternating => CaseStyle::Alternating,
+        },
+        include_number: args.mem_number && !args.no_number,
+        number_position: match args.num_pos {
+            NumPosition::Start => Position::Start,
+            NumPosition::End => Position::End,
+            NumPosition::Between => Position::Between,
+        },
+        number_max: args.num_max,
+        include_special: args.mem_special && !args.no_special,
+        special_position: match args.special_pos {
+            NumPosition::Start => Position::Start,
+            NumPosition::End => Position::End,
+            NumPosition::Between => Position::Between,
+        },
+        style: match args.mem_style {
+            MemStyle::Classic => MemorableStyle::Classic,
+            MemStyle::Passphrase => MemorableStyle::Passphrase,
+            MemStyle::Story => MemorableStyle::Story,
+            MemStyle::Alliterative => MemorableStyle::Alliterative,
+        },
+        count: args.mem_count,
+        min_length: args.mem_min_len,
+        max_length: args.mem_max_len,
+    }
+}
