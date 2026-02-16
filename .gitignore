@@ -1,5 +1,12 @@
 /target
-*.txt
-*.json
-*.model
 /jigsaw-web
+vendor
+
+# Debian packaging artifacts
+/debian/jigsaw
+/debian/.debhelper
+/debian/cargo_home
+/debian/files
+/debian/*.log
+/debian/*.substvars
+/debian/debhelper-build-stamp

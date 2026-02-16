@@ -1,5 +1,6 @@
-use rand::seq::SliceRandom;
+use rand::seq::IndexedRandom;
 use rand::Rng;
+use rand::RngExt;
 use serde::{Serialize, Deserialize};
 
 // ═══════════════════════════════════════════════════════════════
@@ -137,7 +138,7 @@ pub fn generate_memorable_password() -> String {
 }
 
 pub fn generate_with_config(config: &MemorableConfig) -> String {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     // Retry loop to satisfy length constraints
     for _ in 0..100 {
         let result = build_password(&mut rng, config);
@@ -166,20 +167,20 @@ fn build_password(rng: &mut impl Rng, config: &MemorableConfig) -> String {
     // Insert number
     if config.include_number {
         let num = if config.number_max <= 9 {
-            rng.gen_range(0..=config.number_max).to_string()
+            rng.random_range(0..=config.number_max).to_string()
         } else if config.number_max <= 99 {
-            format!("{:02}", rng.gen_range(0..=config.number_max))
+            format!("{:02}", rng.random_range(0..=config.number_max))
         } else if config.number_max <= 999 {
-            format!("{:03}", rng.gen_range(0..=config.number_max))
+            format!("{:03}", rng.random_range(0..=config.number_max))
         } else {
-            rng.gen_range(0..=config.number_max).to_string()
+            rng.random_range(0..=config.number_max).to_string()
         };
 
         match config.number_position {
             Position::Start => parts.insert(0, num),
             Position::End => parts.push(num),
             Position::Between => {
-                let pos = if parts.len() > 1 { rng.gen_range(1..parts.len()) } else { parts.len() };
+                let pos = if parts.len() > 1 { rng.random_range(1..parts.len()) } else { parts.len() };
                 parts.insert(pos, num);
             }
         }
@@ -192,7 +193,7 @@ fn build_password(rng: &mut impl Rng, config: &MemorableConfig) -> String {
             Position::Start => parts.insert(0, sym),
             Position::End => parts.push(sym),
             Position::Between => {
-                let pos = if parts.len() > 1 { rng.gen_range(1..parts.len()) } else { parts.len() };
+                let pos = if parts.len() > 1 { rng.random_range(1..parts.len()) } else { parts.len() };
                 parts.insert(pos, sym);
             }
         }
@@ -250,7 +251,7 @@ fn pick_story(rng: &mut impl Rng, count: usize) -> Vec<String> {
 
 fn pick_alliterative(rng: &mut impl Rng, count: usize) -> Vec<String> {
     // All words start with the same letter
-    let letter_idx = rng.gen_range(b'a'..=b'z') as char;
+    let letter_idx = rng.random_range(b'a'..=b'z') as char;
 
     let mut all: Vec<&str> = Vec::new();
     all.extend_from_slice(ADJECTIVES);
@@ -270,7 +271,7 @@ fn pick_alliterative(rng: &mut impl Rng, count: usize) -> Vec<String> {
     let mut words = Vec::new();
     let mut pool = filtered.clone();
     for _ in 0..count {
-        let idx = rng.gen_range(0..pool.len());
+        let idx = rng.random_range(0..pool.len());
         words.push(pool[idx].to_string());
         pool.remove(idx);
         if pool.is_empty() { break; }
@@ -291,7 +292,7 @@ fn apply_case(word: &str, style: &CaseStyle, rng: &mut impl Rng) -> String {
         CaseStyle::Upper => word.to_uppercase(),
         CaseStyle::Random => {
             word.chars().map(|c| {
-                if rng.gen_bool(0.5) { c.to_uppercase().next().unwrap_or(c) }
+                if rng.random_bool(0.5) { c.to_uppercase().next().unwrap_or(c) }
                 else { c.to_lowercase().next().unwrap_or(c) }
             }).collect()
         }

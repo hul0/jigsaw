@@ -1,0 +1,62 @@
+name: Deploy Debian Repository
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y debhelper devscripts dpkg-dev
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Vendor Dependencies
+        run: cargo vendor
+
+      - name: Build Debian Package
+        run: dpkg-buildpackage -us -uc -b
+
+      - name: Create APT Repository Structure
+        run: |
+          mkdir -p public
+          cp ../*.deb public/
+          cd public
+          
+          # Generate Packages & Packages.gz
+          dpkg-scanpackages --multiversion . > Packages
+          gzip -k -9 Packages
+          
+          # Generate Release file
+          cat <<EOF > Release
+          Origin: JIGSAW Repository
+          Label: JIGSAW
+          Suite: stable
+          Codename: stable
+          Version: 1.0
+          Architectures: amd64
+          Components: main
+          Description: Jigsaw Password Toolkit Repository
+          Date: $(date -R)
+          EOF
+          
+          # Generate Release.gpg / InRelease if GPG key exists (Optional)
+          # gpg --armor --detach-sign --output Release.gpg Release
+          # gpg --clear-sign --output InRelease Release
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public

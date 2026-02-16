@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use rand::Rng;
+use rand::RngExt;
 use serde::{Serialize, Deserialize};
 use std::fs::File;
 use std::io::{self, BufRead, BufReader};
@@ -94,13 +95,13 @@ impl MarkovModel {
         // Retrofit: Let's assume the user calls train, we should track start contexts explicitly?
         // For now, I'll pick a random key. In production, this should be optimized.
         let keys: Vec<&String> = self.transitions.keys().collect();
-        let start_idx = rng.gen_range(0..keys.len());
+        let start_idx = rng.random_range(0..keys.len());
         let mut current_context = keys[start_idx].clone();
         let mut result = current_context.clone();
 
         while result.len() < max_len {
             if let Some(trans) = self.transitions.get(&current_context) {
-                let r: f64 = rng.gen(); // 0.0..1.0
+                let r: f64 = rng.random(); // 0.0..1.0
                 let next_char = trans.iter()
                     .find(|(_, cum)| r <= *cum)
                     .map(|(c, _)| *c)

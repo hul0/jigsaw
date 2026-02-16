@@ -1,0 +1,29 @@
+#!/usr/bin/make -f
+
+export CARGO_HOME = $(CURDIR)/debian/cargo_home
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+
+%:
+	dh $@
+
+override_dh_auto_configure:
+	mkdir -p $(CARGO_HOME)
+
+override_dh_auto_build:
+	# Remove .orig files created by dpkg-source that break vendor checksums
+	find vendor -name '*.orig' -delete 2>/dev/null || true
+	cargo build --release --frozen
+
+override_dh_auto_install:
+	install -D -m 755 target/release/jigsaw debian/jigsaw/usr/bin/jigsaw
+
+override_dh_auto_test:
+	# Tests skipped during package build
+	true
+
+override_dh_auto_clean:
+	cargo clean || true
+	rm -rf $(CARGO_HOME)
+
+override_dh_shlibdeps:
+	dh_shlibdeps --dpkg-shlibdeps-params=--ignore-missing-info

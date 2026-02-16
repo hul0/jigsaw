@@ -86,7 +86,7 @@ async fn main() -> anyhow::Result<()> {
                 || MarkovBatcher {
                     buffer: Vec::with_capacity(1000),
                     sender: sender.clone(),
-                    rng: rand::thread_rng(),
+                    rng: rand::rng(),
                 },
                 |batcher, _| {
                     let candidate = model.generate(&mut batcher.rng, 6, 12);

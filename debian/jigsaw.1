@@ -1,0 +1,193 @@
+.\" Manpage for jigsaw
+.\" Copyright (C) 2026 Rupam Ghosh
+.\" Licensed under GPL-3.0-or-later
+.TH JIGSAW 1 "February 2026" "jigsaw 0.1.0" "User Commands"
+.SH NAME
+jigsaw \- intelligent password wordlist generator for offensive security
+.SH SYNOPSIS
+.B jigsaw
+[\fIOPTIONS\fR]
+.br
+.B jigsaw
+\fBserver\fR [\fB\-\-port\fR \fIPORT\fR]
+.SH DESCRIPTION
+.B JIGSAW
+(Joint Intelligence Generator for Strategic Attack Wordlists) is a
+high\-performance, Rust\-based intelligent wordlist generator designed for
+modern offensive security. It employs probabilistic models, targeted
+personal profiling, and advanced permutation logic to generate high\-value
+password candidates.
+.SH MODES
+.SS "Mask Attack"
+Generate password candidates from a Hashcat\-style mask pattern.
+.PP
+.B jigsaw \-m
+\fIMASK\fR [\fB\-o\fR \fIFILE\fR]
+.PP
+Charset tokens: \fB?l\fR (lowercase), \fB?u\fR (uppercase), \fB?d\fR (digits),
+\fB?s\fR (special), \fB?a\fR (all). Literal characters are used as\-is.
+.SS "Markov Chain"
+Train a probabilistic model on an existing wordlist, then generate
+similar password candidates.
+.PP
+.B jigsaw \-\-train
+\fIWORDLIST\fR [\fB\-\-model\fR \fIPATH\fR]
+.br
+.B jigsaw \-\-markov \-\-model
+\fIPATH\fR [\fB\-\-count\fR \fIN\fR]
+.SS "Personal Attack"
+Generate a targeted wordlist using a JSON profile containing names,
+dates, companies, cities, and other personal information.
+.PP
+.B jigsaw \-\-personal \-\-profile
+\fIPATH\fR [\fB\-\-level\fR \fILEVEL\fR]
+.PP
+Levels: \fBquick\fR, \fBstandard\fR (default), \fBdeep\fR, \fBinsane\fR.
+.SS "Memorable Passwords"
+Generate human\-memorable yet strong passwords.
+.PP
+.B jigsaw \-\-memorable
+[\fB\-\-words\fR \fIN\fR] [\fB\-\-mem\-style\fR \fISTYLE\fR] [\fB\-\-mem\-count\fR \fIN\fR]
+.PP
+Styles: \fBclassic\fR (Adjective\-Noun\-Verb), \fBpassphrase\fR (random word chain),
+\fBstory\fR (subject\-verb\-object), \fBalliterative\fR (same starting letter).
+.SS "REST API Server"
+Start an HTTP API server exposing JIGSAW functionality.
+.PP
+.B jigsaw server
+[\fB\-\-port\fR \fIPORT\fR]
+.SS "Interactive Wizard"
+A guided, step\-by\-step interactive CLI for building profiles and
+selecting modes.
+.PP
+.B jigsaw \-\-interactive
+.SH OPTIONS
+.TP
+.BR \-o ", " \-\-output " " \fIFILE\fR
+Write output to FILE instead of stdout.
+.TP
+.BR \-\-format " " \fIFORMAT\fR
+Output format: \fBplain\fR (default) or \fBjson\fR.
+.TP
+.BR \-t ", " \-\-threads " " \fIN\fR
+Number of threads (default: automatic based on CPU cores).
+.TP
+.BR \-i ", " \-\-interactive
+Run the interactive wizard mode.
+.TP
+.BR \-m ", " \-\-mask " " \fIMASK\fR
+Mask pattern for mask attack mode.
+.TP
+.BR \-\-train " " \fIWORDLIST\fR
+Train a Markov model from the given wordlist file.
+.TP
+.BR \-\-model " " \fIPATH\fR
+Path to Markov model file (default: jigsaw.model).
+.TP
+.BR \-\-markov
+Run in Markov generation mode using a trained model.
+.TP
+.BR \-\-count " " \fIN\fR
+Number of candidates to generate in Markov mode (default: 10000).
+.TP
+.BR \-\-personal
+Enable Personal Attack mode.
+.TP
+.BR \-\-profile " " \fIPATH\fR
+Path to a Personal Profile JSON file.
+.TP
+.BR \-\-level " " \fILEVEL\fR
+Generation intensity: quick, standard, deep, insane.
+.TP
+.BR \-\-min\-length " " \fIN\fR
+Minimum password length filter.
+.TP
+.BR \-\-max\-length " " \fIN\fR
+Maximum password length filter.
+.TP
+.BR \-\-check " " \fIPASSWORD\fR
+Check if PASSWORD exists in the generated candidate list.
+.TP
+.BR \-\-memorable
+Generate memorable password(s).
+.TP
+.BR \-\-words " " \fIN\fR
+Number of words in memorable password (default: 3).
+.TP
+.BR \-\-mem\-sep " " \fISEP\fR
+Separator between words in memorable password.
+.TP
+.BR \-\-mem\-style " " \fISTYLE\fR
+Memorable password style: classic, passphrase, story, alliterative.
+.TP
+.BR \-\-mem\-case " " \fICASE\fR
+Case style: title, lower, upper, random, alternating.
+.TP
+.BR \-\-no\-number
+Skip number in memorable password.
+.TP
+.BR \-\-no\-special
+Skip special character in memorable password.
+.TP
+.BR \-\-mem\-count " " \fIN\fR
+How many memorable passwords to generate (default: 1).
+.TP
+.BR \-h ", " \-\-help
+Print help information.
+.TP
+.BR \-V ", " \-\-version
+Print version information.
+.SH EXAMPLES
+Generate an 8\-character lowercase/numeric mask wordlist:
+.PP
+.RS
+.B jigsaw \-m \(dq?l?l?l?l?d?d?d?d\(dq \-o wordlist.txt
+.RE
+.PP
+Train a Markov model on a wordlist:
+.PP
+.RS
+.B jigsaw \-\-train rockyou.txt \-\-model my.model
+.RE
+.PP
+Generate Markov passwords:
+.PP
+.RS
+.B jigsaw \-\-markov \-\-model my.model \-\-count 100000 \-o output.txt
+.RE
+.PP
+Run a personal attack:
+.PP
+.RS
+.B jigsaw \-\-personal \-\-profile target.json \-\-level deep \-o targeted.txt
+.RE
+.PP
+Generate 5 memorable passwords:
+.PP
+.RS
+.B jigsaw \-\-memorable \-\-mem\-count 5 \-\-mem\-style passphrase \-\-mem\-sep \(dq\-\(dq
+.RE
+.PP
+Start the API server on port 9090:
+.PP
+.RS
+.B jigsaw server \-\-port 9090
+.RE
+.SH FILES
+.TP
+.I jigsaw.model
+Default path for Markov model files.
+.SH AUTHOR
+Written by Rupam Ghosh.
+.SH REPORTING BUGS
+Report bugs at: <https://github.com/hul0/jigsaw/issues>
+.SH COPYRIGHT
+Copyright \(co 2026 Rupam Ghosh.
+License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.
+.br
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+.SH SEE ALSO
+.BR hashcat (1),
+.BR john (1),
+.BR crunch (1)

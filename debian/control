@@ -1,0 +1,28 @@
+Source: jigsaw
+Section: security
+Priority: optional
+Maintainer: Rupam Ghosh <hulo@hulo.codes>
+Build-Depends: debhelper-compat (= 13), rustc, cargo
+Standards-Version: 4.6.2
+Homepage: https://github.com/hul0/jigsaw
+Rules-Requires-Root: no
+
+Package: jigsaw
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: intelligent password wordlist generator for offensive security
+ JIGSAW (Joint Intelligence Generator for Strategic Attack Wordlists) is a
+ high-performance, Rust-based intelligent wordlist generator designed for
+ modern offensive security.
+ .
+ It moves beyond simple brute-force by employing probabilistic models,
+ targeted personal profiling, and advanced permutation logic to generate
+ high-value password candidates.
+ .
+ Features include:
+  * Mask attack with Hashcat-style patterns
+  * Markov chain probabilistic password generation
+  * Personal attack using target profile JSON files
+  * Memorable password generator with multiple styles
+  * REST API server mode
+  * Interactive CLI wizard

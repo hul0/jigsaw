@@ -18,7 +18,7 @@
 
 JIGSAW is a high-performance, Rust-based intelligent wordlist generator designed for modern offensive security. It moves beyond simple brute-force by employing probabilistic models, targeted personal profiling, and advanced permutation logic to generate high-value password candidates.
 
-![License: GPLv2](https://img.shields.io/badge/License-GPLv2-blue.svg)
+![License: GPLv3](https://img.shields.io/badge/License-GPLv3-blue.svg)
 ![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
 ![Rust](https://img.shields.io/badge/rust-1.70%2B-orange)
 
@@ -41,11 +41,36 @@ JIGSAW is a high-performance, Rust-based intelligent wordlist generator designed
 
 ## [➤] Installation
 
+### [!] APT Repository (Official)
+
+You can install JIGSAW directly from our official APT repository hosted on GitHub Pages.
+
+```bash
+# Add the repository to your sources list
+echo "deb [trusted=yes] https://hul0.github.io/jigsaw ./" | sudo tee /etc/apt/sources.list.d/jigsaw.list
+
+# Update and install
+sudo apt update
+sudo apt install jigsaw
+```
+
+### [!] Manual Installation (.deb)
+
+Download the latest `.deb` package from the [Releases](https://github.com/hul0/jigsaw/releases) page.
+
+```bash
+sudo dpkg -i jigsaw_*.deb
+sudo apt-get install -f # Fix missing dependencies
+```
+
+### [!] Build from Source
+
 Ensure you have Rust and Cargo installed.
 
 ```bash
-git clone https://github.com/your-username/jigsaw.git
+git clone https://github.com/hul0/jigsaw.git
 cd jigsaw
+cargo vendor
 cargo build --release
 ```
 
@@ -126,7 +151,7 @@ Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for de
 
 ## [➤] License
 
-This project is licensed under the GNU General Public License v2.0 or later - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the GNU General Public License v3.0 or later - see the [LICENSE](LICENSE) file for details.
 
 Copyright (c) 2026 Rupam Ghosh.
 
